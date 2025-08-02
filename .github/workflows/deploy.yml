@@ -14,7 +14,7 @@ jobs:
       DOCKER_BACKEND_IMAGE: devopsbharathi/vijay-backend
       DOCKER_FRONTEND_IMAGE: devopsbharathi/vijay-frontend
       EC2_USER: ubuntu
-      EC2_HOST: 3.109.201.126
+      EC2_HOST: 13.204.80.5
       REPO_NAME: docker-compose
 
     steps:
