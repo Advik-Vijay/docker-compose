@@ -1,0 +1,64 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      DOCKER_USERNAME: devopsbharathi
+      DOCKER_BACKEND_IMAGE: devopsbharathi/vijay-backend
+      DOCKER_FRONTEND_IMAGE: devopsbharathi/vijay-frontend
+      EC2_USER: ubuntu
+      EC2_HOST: 3.109.201.126
+      REPO_NAME: docker-compose
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Backend Image
+        run: |
+          docker build -t $DOCKER_BACKEND_IMAGE ./backend
+          docker push $DOCKER_BACKEND_IMAGE
+
+      - name: Build and Push Frontend Image
+        run: |
+          docker build -t $DOCKER_FRONTEND_IMAGE ./frontend
+          docker push $DOCKER_FRONTEND_IMAGE
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            if [ ! -d "${REPO_NAME}" ]; then
+              echo "Cloning project repo...";
+              git clone https://github.com/Advik-Vijay/docker-compose.git
+            else
+              echo "Pulling latest changes...";
+              cd ${REPO_NAME} && git pull
+            fi
+
+            cd ${REPO_NAME}
+
+            docker pull $DOCKER_BACKEND_IMAGE
+            docker pull $DOCKER_FRONTEND_IMAGE
+
+            docker-compose -f docker-compose.yml down
+            docker-compose -f docker-compose.yml up -d --build
