@@ -47,18 +47,22 @@ jobs:
           username: ${{ env.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            if [ ! -d "${REPO_NAME}" ]; then
-              echo "Cloning project repo...";
+            cd ~
+            if [ ! -d "docker-compose/.git" ]; then
+              echo "Removing old folder and cloning fresh repo..."
+              rm -rf docker-compose
               git clone https://github.com/Advik-Vijay/docker-compose.git
             else
-              echo "Pulling latest changes...";
-              cd ${REPO_NAME} && git pull
+              echo "Pulling latest changes..."
+              cd docker-compose && git pull && cd ..
             fi
 
-            cd ${REPO_NAME}
+            cd docker-compose
 
+            echo "Pulling Docker images..."
             docker pull $DOCKER_BACKEND_IMAGE
             docker pull $DOCKER_FRONTEND_IMAGE
 
+            echo "Restarting services..."
             docker-compose -f docker-compose.yml down
             docker-compose -f docker-compose.yml up -d --build
